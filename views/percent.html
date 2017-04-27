@@ -1,0 +1,527 @@
+<html lang="zh-CN">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>拼图游戏</title>
+    <style type="text/css">
+    * {
+        margin: 0;
+        padding: 0;
+        border: 0;
+    }
+    
+    html,
+    body {
+        width: 100%;
+        height: 100%;
+    }
+    
+    #father {
+        margin: 0 auto;
+        position: relative;
+        
+    }
+    .box{
+        background-position: 0 0;
+        background-size: 100% 100%;
+        top: 20px;
+    }
+    .background {
+        position: absolute;
+        z-index: 2;
+        display: none;
+    }
+    #father div {
+        position: absolute;
+        z-index: 0;
+    }
+    
+    #shadow {
+        position: absolute;
+        opacity: 0.5;
+    }
+    
+    .alert {
+        width: 200px;
+        height: 120px;
+        position: fixed;
+        top: 50px;
+        left: 50%;
+        margin-left: -100px;
+        border: 1px solid black;
+        background: #fff;
+        display: none;
+        z-index: 2;
+    }
+    
+    .alert p {
+        text-align: center;
+        line-height: 50px;
+    }
+    
+    .alert span {
+        width: 60px;
+        height: 30px;
+        line-height: 30px;
+        text-align: center;
+        border: 1px solid #999;
+        margin-top: 20px;
+        display: block;
+        margin-left: 70px;
+        background: orange;
+    }
+    
+    #time {
+        position: fixed;
+        right: 30px;
+        top: 50px;
+        font-size: 40px;
+        color: red;
+        
+    }
+    .alltime{
+        display: none;
+        position: fixed;
+        top:30px;
+        color:red;
+        width:100%;
+        text-align: center;
+        font-size: 30px;
+        z-index: 4;
+    }
+    .start {
+        display: none;
+        font-size: 150px;
+        height: 150px;
+        width: 100%;
+        text-align: center;
+        position: fixed;
+        left: 0;
+        right: 0;
+        top: 0;
+        bottom: 0;
+        margin: auto;
+        color: red;
+        -webkit-transition: all 1s ease;
+        z-index: 3;
+    }
+    
+    .mask {
+        position: fixed;
+        z-index: 1;
+        background: transparent;
+        display: none;
+    }
+
+    .register{
+        width:400px;
+        position: fixed;
+        top:50px;
+        border:1px solid #666;
+        left:50%;
+        margin-left:-200px;
+        padding-bottom:20px;
+        z-index: 5;
+    }
+    .register-title{
+        line-height: 40px;
+        font-size: 24px;
+        color:#333;
+        text-align: center;
+    }
+    .register-main{
+        width:300px;
+        margin:20px auto;
+    }
+    .register-main p{
+        height:30px;
+        line-height: 30px;
+        margin-bottom:10px;
+    }
+    .register-main input{
+        display: inline-block;
+        width:200px;
+        font-size: 18px;
+        line-height: 28px;
+        border:1px solid black;
+    }
+    .submit{
+        width:60px;
+        height:30px;
+        line-height: 30px;
+        text-align: center;
+        background:#999;
+        color:white;
+        margin:0 auto;
+        border-radius: 3px;
+    }
+    .register a{
+        width:300px;
+        display: block;
+        text-align: center;
+        margin:10px auto 0 auto;
+        color:red;
+    }
+    .register-btn{
+        display: none;
+    }
+    .right-top{
+        display: none;
+        position: absolute;
+        right:8px;
+        top:5px;
+        font-size: 18px;
+        color:red;
+        cursor: pointer;
+    }
+    </style>
+</head>
+
+<body>
+    <div class="register">
+        <h1 class="register-title">登录</h1>
+        <div class="register-main">
+            <p>用户名: <input type="text" id="user_name"></p>
+            <p>密&nbsp;&nbsp;&nbsp;码: <input type="text" id="password"></p>    
+        </div>
+        <div class="login submit">登录</div>
+        <div class="register-btn submit">注册</div>
+        <a href="javascript:;" class='change'>还没注册,点击这里注册</a>
+        <div class="right-top">登录</div>
+    </div>
+    <div id="father" class="box">
+    </div>
+    <div class="alert success">
+        <p>恭喜你进入下一关!</p>
+        <span>确定</span>
+    </div>
+    <div class="alert fail">
+        <p>时间到,失败</p>
+        <span>继续</span>
+    </div>
+    <div class="background box"></div>
+    <div class="mask"></div>
+    <div class="start">拼图开始</div>
+    <div id="time"></div>
+    <div class="alltime">你有8秒的观察时间</div>
+    <script type="text/javascript" src="lib/jquery-1.11.3.js"></script>
+    <script type="text/javascript">
+    /* 登录注册切换 */
+    
+    $('.change').on('click',function(){
+        $('.register-title').text('注册');
+        $(".register-btn").show();
+        $(".login").hide();
+        $(".right-top").show();
+        $(this).hide();
+    });
+
+    $(".right-top").on('click',function(){
+        change();
+    })
+
+    $('.register-btn').on('click',function(){
+        $.ajax({
+            url: "/admin/register",
+            method: 'post',
+            data: {
+                user_name: $('#user_name').val(),
+                password: $('#password').val()
+            },
+            success: function (data) {
+                change();
+                alert(data);
+            }
+        })
+    })
+
+    $('.login').on('click',function(){
+        $.ajax({
+            url: '/admin/login',
+            method: 'post',
+            data: {
+                user_name: $('#user_name').val(),
+                password: $('#password').val()
+            },
+            success: function(data){
+                if(data.title == '登录成功'){
+                    alert(data.title)
+                    config.square = +data.guan;
+                    $(".start").show();
+                    $(".alltime").show();
+                    setTimeout(function() {
+                        $(".start").hide();
+                    }, 1000)
+                    pinTu.init($("#father"));
+                    $(".register").hide();
+                }else{
+                    alert(data)
+                }       
+            }
+        })
+    })
+    $(".success span").click(function() {
+        var square = config.square;
+        config.square = square + 1;
+        $("#father").empty();
+        pinTu.init($("#father"));
+        $(".success").hide();
+        $(".mask").hide();
+
+    });
+    $(".fail span").click(function() {
+        $("#father").empty();
+        pinTu.init($("#father"));
+        $(".fail").hide();
+        $(".mask").hide();
+    });
+    
+    $(".box").css({
+        width: ($("body").height() - 40) + 'px',
+        height: ($("body").height() - 40) + 'px'
+    });
+    $(".mask").css({
+        width: ($("body").height() - 40) + 'px',
+        height: ($("body").height() - 40) + 'px',
+        top:'20px',
+        left:$("#father").offset().left + 'px'
+    })
+    $(".background").css({
+        left:$("#father").offset().left + 'px'
+    })
+    function change(){
+        $('.register-title').text('登录');
+        $(".register-btn").hide();
+        $(".login").show();
+        $(".right-top").hide();
+        $(this).hide();
+        $(".change").show();
+    }
+    var time; //全局定时器
+    var step; //失败之后仍然选取失败时的图片
+    var config = {
+        square: 2,
+        width: function() {
+            return ($('body').height() - 40) / this.square;
+        },
+        time: ["00:00:10", "00:01:15", "00:02:00", "00:04:00", "00:06:00", "00:08:00", "00:10:00", "00:12:00", "00:15:00", "00:20:00", "00:30:00", "00:40:00", "00:50:00", , "01:00:00"],
+        arr: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15],
+        statu: true
+    }
+    var pinTu = {
+        init: function(elem) {
+            this.box = elem;
+            this.arr = [];
+            this.num = config.statu ? Math.ceil(Math.random() * (config.arr.length)) : step; //从图片堆里随机抽取图片
+            this.getArr();
+            this.random();
+            this.addClass();
+            this.bindEvents();
+            step = this.num;
+        },
+        random: function() {
+            var a = Math.random();
+            this.arr.sort(function() {
+                return a;
+            })
+        },
+        getArr: function() {
+            for (var i = 0; i < Math.pow(config.square, 2); i++) {
+                this.arr.push(i);
+                this.box.append("<div></div>")
+            }
+        },
+        addClass: function() {
+            var box = this.box.children();
+            var square = config.square;
+            var width = config.width();
+            $(".background").show();
+            $(".alltime").show();
+            $(".background").css("background-image","url(img/get" + config.arr[this.num - 1] + ".jpg)");
+            setTimeout(function(){
+                $(".background").hide();
+                $(".alltime").hide();
+                
+                countDown(config.time[config.square - 2], "time");
+            },1000)
+            for (var i = 0; i < this.arr.length; i++) {
+                //box.eq(i).addClass("list" + this.arr[i]);
+                box.eq(i).css({
+                    width: width + 'px',
+                    height: width + 'px',
+                    backgroundPosition: -this.arr[i] % square * width + 'px ' + '-' + Math.floor(this.arr[i] / square) * width + 'px',
+                    backgroundSize: $("body").height() + 'px ' + $("body").height() + 'px',
+                    left: i % square * width + 'px',
+                    top: Math.floor(i / square) * width + 'px'
+                })
+                box.eq(i).css("background-image", "url(img/get" + config.arr[this.num - 1] + ".jpg)")
+            }
+
+        },
+        bindEvents: function() {
+            var _this = this;
+            var handle = this.box.children();
+            var index = 0;
+            var $this;
+            var cla;
+            var square = config.square
+            for (var i = 0; i < handle.length; i++) {
+                handle[i].pos = [i - Math.floor(i / square) * square, Math.floor(i / square)];
+            }
+            handle.on("mousedown", function() {
+                $this = $(this);
+                index = $(this).index();
+                $(this).css({
+                    opacity: "0.5",
+                    zIndex: "1"
+                });
+                _this.box.bind("mousedown", test);
+
+            })
+
+            function test(e) {
+
+                _this.box.append('<div id="shadow"></div>');
+                $("#shadow").css({
+                    background: handle.eq(index).css("background"),
+                    width: config.width() + 'px',
+                    height: config.width() + 'px'
+                });
+                handle.eq(index).css("display", "none");
+                _this.box.bind("mousemove", _test);
+
+                _this.box.bind("mouseup", __test);
+            }
+
+            function _test(e) {
+                //console.log(e.clientX,e.clientY)
+                var x = e.clientX - _this.box.offset().left;
+                var y = e.clientY - _this.box.offset().top;
+                var width = config.width();
+                var posx = Math.floor(x / width);
+                var posy = Math.floor(y / width);
+                var winHeight = $("body").height();
+                var winWidth = $("body").width();
+                var w = width / 2;
+                var h = width / 2;
+                /* if(y >= _this.box.height() - h){
+                     y = winHeight - h;
+                 }
+                 if(y <= h){
+                     y = h;
+                 }*/
+                if (x >= (winWidth - _this.box.width()) / 2 + _this.box.width() - w) {
+                    x = (winWidth - _this.box.width()) / 2 + _this.box.width() - w;
+                }
+                if (x <= w - (winWidth - _this.box.width()) / 2) {
+                    x = w - (winWidth - _this.box.width()) / 2;
+                }
+                $("#shadow").css({
+                    left: x - w + "px",
+                    top: y - h + "px"
+                });
+                cla = $this.css("background-position");
+                if (x < 0 || y < 0) return;
+                for (var i = 0; i < handle.length; i++) {
+                    if (handle[i].pos[0] == posx && handle[i].pos[1] == posy && index != i) {
+                        handle.css("opacity", "1");
+                        handle.eq(i).css("opacity", "0.5");
+                        $this.css("opacity", "0.5");
+                        index = i;
+                    }
+                }
+            }
+
+            function __test(e) {
+                var cl = handle.eq(index).css("background-position");
+
+                handle.eq(index).css("background-position", cla);
+                $this.css("background-position", cl);
+                $this.show();
+                $("#shadow").remove();
+                handle.css({
+                    zIndex: "0",
+                    opacity: "1"
+                });
+                _this.win();
+                _this.box.unbind("mousedown", test);
+                _this.box.unbind("mousemove", _test);
+                _this.box.unbind("mouseup", __test);
+            }
+        },
+        win: function() {
+            var flag = true;
+            var handle = this.box.children();
+            for (var i = 0; i < handle.length; i++) {
+                //var a = handle.eq(i).attr("class").match(/\d+/g);
+                var a = handle.eq(i).css("background-position").split(" ");
+                var b = handle.eq(i).css("left");
+                var c = handle.eq(i).css("top");
+                if (a[0].replace('-', '') != b || a[1].replace('-', '') != c) {
+                    flag = false;
+                }
+            }
+            if (flag) {
+                config.statu = true;
+                $(".success").show();
+                $(".mask").show();
+                clearInterval(time); // 关定时器
+                $.ajax({
+                    url: '/game/save',
+                    method: 'post',
+                    data: {
+                        user_name: $("#user_name").val(),
+                        password: $("#password").val(),
+                        guan: config.square + 1
+                    },
+                    success: function(data){
+                        if(data == '登录信息已失效'){
+                            window.location.reload();
+                        }
+                    }
+                })
+                if (config.square == 15) {
+                    $(".success p").text("恭喜你打通过，再见");
+                    $(".success span").hide();
+                    return;
+                }
+            }
+        }
+    }
+    
+
+    function countDown(times, elem, fn) {
+        var arr = times.split(':');
+        var h = +arr[0];
+        var m = +arr[1];
+        var s = +arr[2];
+        var str = '倒计时 : ' + ('0' + h).slice(-2) + ':' + ('0' + m).slice(-2) + ':' + ('0' + s).slice(-2);
+        var box = document.getElementById(elem);
+        box.innerHTML = str;
+        time = setInterval(function() {
+            s--;
+            if (h === 0 && m === 0 && s === 0) {
+                clearInterval(time);
+                $(".fail").show();
+                $(".mask").show();
+                config.statu = false;
+            } else {
+                if (s < 0) {
+                    m--;
+                    s = 59;
+                    if (m < 0) {
+                        h--;
+                        m = 59;
+                    }
+                }
+
+            }
+            str = '倒计时 : ' + ('0' + h).slice(-2) + ':' + ('0' + m).slice(-2) + ':' + ('0' + s).slice(-2);
+            box.innerHTML = str;
+        }, 1000)
+    }
+    </script>
+</body>
+
+</html>
